@@ -1,30 +1,38 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore'; // Import Firestore functions
+import { getFirestore } from 'firebase/firestore';
 
 const Signin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const onSignin = (e) => {
+  const onSignin = async (e) => {
     e.preventDefault();
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        // Retrieve the user's nickname from the database (or elsewhere)
-        // You can also use local storage or global state for this
-        // Example: const nickname = getUserNicknameFromDatabase(user.uid);
+      // Retrieve the user's nickname from Firestore
+      const db = getFirestore(auth.app);
+      const userRef = doc(db, 'users', user.uid);
 
-        // Log the user's nickname
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const nickname = userData.nickname;
+
         console.log('User signed in with nickname:', nickname);
 
         // Perform other actions after successful sign-in
-      })
-      .catch((error) => {
-        console.log('Sign-in error:', error);
-      });
+      } else {
+        console.log('User profile not found');
+      }
+    } catch (error) {
+      console.log('Sign-in error:', error);
+    }
   };
 
   return (

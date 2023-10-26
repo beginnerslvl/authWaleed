@@ -1,35 +1,38 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // Import the necessary authentication functions
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../firebase';
+import { doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import { getFirestore } from 'firebase/firestore';
 
 const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
 
-  const onSignUp = (e) => {
+  const onSignUp = async (e) => {
     e.preventDefault();
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        const user = userCredential.user;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-        // Save the user's nickname (and other profile data) to a database
-        // You can also use local storage or global state for this
-        const userProfileData = {
-          nickname,
-          // Add other profile data here if needed
-        };
+      // Save the user's nickname to Firestore
+      const db = getFirestore(auth.app);
+      const userRef = doc(db, 'users', user.uid);
 
-        // Log the user's nickname
-        console.log('User signed up with nickname:', nickname);
+      const userProfileData = {
+        nickname,
+        // Add other profile data here if needed
+      };
 
-        // Perform actions like saving the user's profile data to a database
-        // or redirecting to a profile setup page
-      })
-      .catch((error) => {
-        console.log('Sign-up error:', error);
-      });
+      await setDoc(userRef, userProfileData);
+
+      console.log('User signed up with nickname:', nickname);
+
+      // Perform actions like redirecting to a profile setup page
+    } catch (error) {
+      console.log('Sign-up error:', error);
+    }
   };
 
   return (
